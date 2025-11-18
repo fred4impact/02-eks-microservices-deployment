@@ -59,10 +59,6 @@ variable "private_endpoint_access" {
 variable "public_endpoint_access" {
 
 }
-
-variable "public_endpoint_access" {
-
-}
 variable "addons" {
   type = list(object({
     addon_name    = string

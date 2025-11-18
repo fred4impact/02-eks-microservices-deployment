@@ -1,5 +1,5 @@
 locals {
-  cluster_name = cluster_name
+  cluster_name = var.cluster_name
 }
 
 # Create VPC
@@ -39,10 +39,10 @@ resource "aws_subnet" "public_subnet" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name                                           = "${var.public_subnet_name}-${count.index + 1}"
-    evn                                            = var.environment
-    "kuvbernetes.io/cluster/${local.cluster_name}" = "owned"
-    "kubernetes.io/role/elb"                       = "1"
+    Name                                          = "${var.public_subnet_name}-${count.index + 1}"
+    evn                                           = var.environment
+    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+    "kubernetes.io/role/elb"                      = "1"
 
   }
 
@@ -58,7 +58,7 @@ resource "aws_subnet" "private_subnet" {
   availability_zone = element(var.public_availability_zone, count.index)
 
   tags = {
-    Name                                          = "${var.private_subnet_name}-$(count.index + 1)"
+    Name                                          = "${var.private_subnet_name}-${count.index + 1}"
     evn                                           = var.environment
     "kubernetes.io/cluster/${local.cluster_name}" = "owned"
     "kubernetes.io/role/internal-elb"             = "1"
@@ -72,7 +72,7 @@ resource "aws_subnet" "private_subnet" {
 # Create Public Route Table
 resource "aws_route_table" "public-rt" {
   vpc_id = aws_vpc.vpc.id
-  route = {
+  route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.nameigw.id
   }
@@ -96,9 +96,10 @@ resource "aws_route_table_association" "public-rt-assoc" {
 resource "aws_route_table" "private-rt" {
   vpc_id = aws_vpc.vpc.id
 
-  route = {
-    cidr_block = "0.0.0.0/0"
-  nat_gateway_id = aws_nat_gateway.nat-gw.id }
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat-gw.id
+  }
 
   tags = {
     Name = "${local.cluster_name}-private-rt"
@@ -117,7 +118,7 @@ resource "aws_route_table_association" "private-rt-assoc" {
 }
 
 # Allocate Elastic IP for NAT Gateway
-resource "aws_ip" "nat-gw-ip" {
+resource "aws_eip" "nat-gw-ip" {
   domain = "vpc"
 
   tags = {
@@ -130,9 +131,9 @@ resource "aws_ip" "nat-gw-ip" {
 
 # Create NAT Gateway in the first Public Subnet
 resource "aws_nat_gateway" "nat-gw" {
-  allocation_id = aws_ip.nat-gw-ip.id
+  allocation_id = aws_eip.nat-gw-ip.id
   subnet_id     = element(aws_subnet.public_subnet.*.id, 0)
-  depends_on    = [aws_subnet.public_subnet, aws_ip.nat-gw-ip]
+  depends_on    = [aws_subnet.public_subnet, aws_eip.nat-gw-ip]
   tags = {
     Name = "${local.cluster_name}-nat-gw"
     evn  = var.environment
@@ -146,19 +147,18 @@ resource "aws_security_group" "eks-cluster-sg" {
   vpc_id      = aws_vpc.vpc.id
 
 
-  ingress = {
+  ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = [aws_vpc.vpc.cidr_block] # use specific CIDR block of the VPC
   }
 
-  egress = {
+  egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
-
   }
 
   tags = {
