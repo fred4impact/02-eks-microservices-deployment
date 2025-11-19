@@ -27,9 +27,12 @@ jobs:
         name: Terraform ${{ inputs.action.value }} EKS Cluster on AWS
         runs-on: ubuntu-latest
         environment: ${{ inputs.environment }}
+
         defaults:
             run:
+                shell: bash
                 working-directory: setup-eks-cluster
+
         env:
             AWS_REGION: "us-east-1"
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
