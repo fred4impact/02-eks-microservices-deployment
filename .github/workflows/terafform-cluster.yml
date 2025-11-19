@@ -52,13 +52,15 @@ jobs:
             # Optional: Enable caching to speed up init
             - name: Cache Terraform
               uses: actions/cache@v4
+              id: terraform-cache
               with:
                   path: |
                       ~/.terraform.d/plugin-cache
-                      .terraform
-                  key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+                      setup-eks-cluster/.terraform
+                  key: ${{ runner.os }}-terraform-${{ hashFiles('setup-eks-cluster/**/*.tf', 'module/**/*.tf') }}
                   restore-keys: |
                       ${{ runner.os }}-terraform-
+                  if-no-files-found: ignore
 
             - name: Initialize Terraform
               run: terraform init
