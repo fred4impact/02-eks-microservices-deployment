@@ -28,9 +28,10 @@ on_demand_max_size         = 3
 on_demand_min_size         = 1
 on_demand_instance_types   = ["t3.medium"]
 
-# Spot nodegroup (disabled by default in dev)
+# Spot nodegroup (disabled by default in dev - set to 0 to disable)
+# Using multiple instance types increases spot availability
 spot_desired_capacity = 1
 spot_max_size         = 2
 spot_min_size         = 1
-spot_instance_types   = ["t3.medium"]
+spot_instance_types   = ["t3.medium", "t3.small", "t3a.medium", "t3a.small"]
 

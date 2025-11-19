@@ -50,10 +50,10 @@ resource "aws_eks_addon" "eks-addons" {
   addon_name    = each.value.addon_name
   addon_version = each.value.addon_version
 
-  depends_on = [
-    aws_eks_node_group.on_demand_nodegroup,
-    aws_eks_node_group.spot_nodegroup
-  ]
+  depends_on = concat(
+    [aws_eks_node_group.on_demand_nodegroup],
+    var.spot_desired_capacity > 0 ? [aws_eks_node_group.spot_nodegroup[0]] : []
+  )
 }
 
 
@@ -103,6 +103,8 @@ resource "aws_eks_node_group" "on_demand_nodegroup" {
 
 #ON-SPOT Demand Node Group Creation is handled in another module   
 resource "aws_eks_node_group" "spot_nodegroup" {
+  count = var.spot_desired_capacity > 0 ? 1 : 0
+
   cluster_name    = aws_eks_cluster.eks_cluster[0].name
   node_group_name = "${var.cluster_name}-spot-nodegroup"
 
