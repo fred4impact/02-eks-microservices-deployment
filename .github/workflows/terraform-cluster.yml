@@ -1,19 +1,19 @@
-name: Terraform Cluster Provisioning on AWS
+name: Terraform Provisioning for AWS EKS Cluster
 
 on:
     workflow_dispatch:
         inputs:
             tfvars_file:
-                description: "Path to the .tfvars file"
+                description: "The Terraform variables file to use"
                 required: true
                 default: "dev.tfvars"
-            environment:
-                description: "Environment"
+            env:
+                description: "The environment to deploy to"
                 required: true
-                default: "dev"
+                default: "development"
             action:
+                description: "Terraform actions to perform (plan, apply, destroy)"
                 type: choice
-                description: "Terraform Action"
                 options:
                     - plan
                     - apply
@@ -21,60 +21,65 @@ on:
                 required: true
                 default: "plan"
 
+env:
+    AWS_REGION: us-east-1
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 permissions:
     contents: read
 
 jobs:
-    deploy-cluster:
-        name: Terraform ${{ inputs.action.value }} EKS Cluster on AWS
+    terraform:
+        name: Terraform ${{ github.event.inputs.action }}
         runs-on: ubuntu-latest
-        environment: ${{ inputs.environment }}
+        environment: ${{ github.event.inputs.env }}
 
         defaults:
             run:
                 shell: bash
-                working-directory: setup-eks-cluster
+                working-directory: .
 
-        env:
-            AWS_REGION: "us-east-1"
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         steps:
-            - name: Checkout Repository
-              uses: actions/checkout@v5
-              with:
-                  path: setup-eks-cluster
-            - name: Set up Terraform
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Terraform
               uses: hashicorp/setup-terraform@v3
               with:
-                  terraform_version: "1.13.0"
                   terraform_wrapper: true
 
+            # Optional: Enable caching to speed up init
             - name: Cache Terraform
               uses: actions/cache@v4
               with:
-                  path: ~/.terraform.d/plugins
-                  key: ${{ runner.os }}-terraform-${{ hashFiles('**/go.sum') }}
+                  path: |
+                      ~/.terraform.d/plugin-cache
+                      .terraform
+                  key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
                   restore-keys: |
                       ${{ runner.os }}-terraform-
 
-            - name: Install Terraform
+            - name: Terraform Init
               run: terraform init
 
-            - name: Formate  Terraform
+            - name: Terraform Format Check
               run: terraform fmt -check -diff
 
-            - name: Validate  Terraform
+            - name: Terraform Validate
               run: terraform validate
 
             - name: Terraform Plan
-              if: ${{ inputs.action.value == 'plan' }}
-              run: terraform plan
+              if: ${{ github.event.inputs.action == 'plan' }}
+              run: |
+                  terraform plan -var-file=${{ github.event.inputs.tfvars_file }} -input=false
 
             - name: Terraform Apply
-              if: ${{ inputs.action.value == 'apply' }}
-              run: terraform apply -auto-approve
+              if: ${{ github.event.inputs.action == 'apply' }}
+              run: |
+                  terraform apply -auto-approve -var-file=${{ github.event.inputs.tfvars_file }} -input=false
 
             - name: Terraform Destroy
-              if: ${{ inputs.action.value == 'destroy' }}
-              run: terraform destroy -auto-approve
+              if: ${{ github.event.inputs.action == 'destroy' }}
+              run: |
+                  terraform destroy -auto-approve -var-file=${{ github.event.inputs.tfvars_file }} -input=false
