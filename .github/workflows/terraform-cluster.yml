@@ -62,20 +62,14 @@ jobs:
             - name: Validate  Terraform
               run: terraform validate
 
-            - name: Plan Terraform
+            - name: Terraform Plan
               if: ${{ inputs.action.value == 'plan' }}
-              uses: hashicorp/terraform-github-actions@v5
-              with:
-                  arguments: plan
+              run: terraform plan
 
-            - name: Apply Terraform
+            - name: Terraform Apply
               if: ${{ inputs.action.value == 'apply' }}
-              uses: hashicorp/terraform-github-actions@v5
-              with:
-                  arguments: apply
+              run: terraform apply -auto-approve
 
-            - name: Destroy Terraform
+            - name: Terraform Destroy
               if: ${{ inputs.action.value == 'destroy' }}
-              uses: hashicorp/terraform-github-actions@v5
-              with:
-                  arguments: destroy
+              run: terraform destroy -auto-approve
