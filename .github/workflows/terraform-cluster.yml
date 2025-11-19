@@ -1,3 +1,5 @@
+name: Terraform Cluster Provisioning on AWS
+
 on:
     workflow_dispatch:
         inputs:
