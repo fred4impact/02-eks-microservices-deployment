@@ -1,4 +1,4 @@
-name: Terraform Provisioning for AWS EKS Cluster
+name: Terraform EKS Cluster Provisioning on AWS
 
 on:
     workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
                 working-directory: .
 
         steps:
-            - name: Checkout code
+            - name: Checkout Reporsitory
               uses: actions/checkout@v4
 
             - name: Setup Terraform
@@ -60,13 +60,13 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-terraform-
 
-            - name: Terraform Init
+            - name: Initialize Terraform
               run: terraform init
 
-            - name: Terraform Format Check
+            - name: Format Terraform syntax
               run: terraform fmt -check -diff
 
-            - name: Terraform Validate
+            - name: Validate Terraform Code
               run: terraform validate
 
             - name: Terraform Plan
