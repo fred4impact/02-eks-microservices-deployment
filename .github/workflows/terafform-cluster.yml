@@ -38,7 +38,7 @@ jobs:
         defaults:
             run:
                 shell: bash
-                working-directory: .
+                working-directory: setup-eks-cluster
 
         steps:
             - name: Checkout Reporsitory
